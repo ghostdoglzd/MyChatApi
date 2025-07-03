@@ -1,24 +1,60 @@
 import time
-from tenacity import retry, stop_after_attempt, wait_exponential, RetryError  # 导入RetryError
-from flask import Flask, request, jsonify, render_template
+from tenacity import retry, stop_after_attempt, wait_exponential, RetryError
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 import requests
 import os
 from datetime import datetime
+import secrets
 
 app = Flask(__name__)
+app.secret_key = secrets.token_hex(16)
 
 # 使用正确的DeepSeek API端点
 DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions"
-# 从环境变量获取API密钥更安全
-DEEPSEEK_API_KEY = ""
+# 移除API密钥存储，密钥将完全由客户端存储
 
 # 设置上下文最大长度
 MAX_CONTEXT_LENGTH = 10
 
-# 首页路由 - 提供聊天界面
+# 存储会话上下文
+session_context = {}
+
+# 登录页面路由 - 作为网站入口点
 @app.route('/')
-def index():
+def login():
+    return render_template('login.html')
+
+# 处理API密钥验证
+@app.route('/verify_key', methods=['POST'])
+def verify_key():
+    # 只验证API密钥格式，不存储
+    api_key = request.json.get('api_key')
+    if not api_key or not api_key.startswith('sk-'):
+        return jsonify({"success": False, "error": "无效的API密钥格式"}), 400
+    
+    # 生成唯一的会话ID，用于管理上下文，但不关联密钥
+    session_id = secrets.token_urlsafe(16)
+    session['session_id'] = session_id
+    
+    return jsonify({"success": True, "session_id": session_id})
+
+# 聊天页面路由
+@app.route('/chat')
+def chat():
+    session_id = session.get('session_id')
+    if not session_id:
+        # 如果没有会话ID，重定向到登录页面
+        return redirect(url_for('login'))
+    
     return render_template('index.html')
+
+# 首页路由 - 重定向到登录或聊天页面
+@app.route('/index')
+def index():
+    session_id = session.get('session_id')
+    if not session_id:
+        return redirect(url_for('login'))
+    return redirect(url_for('chat'))
 
 # 在ask_question函数中添加重试逻辑
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
@@ -28,30 +64,34 @@ def call_deepseek_api(payload, headers):
             DEEPSEEK_API_URL,
             json=payload,
             headers=headers,
-            timeout=120  # 将超时时间延长到 120 秒
+            timeout=120
         )
-        response.raise_for_status()  # 这里可能会引发HTTPError
+        response.raise_for_status()
         return response
     except requests.exceptions.HTTPError as e:
         app.logger.error(f"HTTPError: {e}")
         app.logger.error(f"Response status code: {e.response.status_code}")
         app.logger.error(f"Response content: {e.response.text}")
-        raise  # 重新抛出异常，让重试机制处理
-
-# 存储会话上下文
-session_context = {}
+        raise
 
 # 问答API路由
 @app.route('/ask', methods=['POST'])
 def ask_question():
     try:
-        # 获取请求中的问题
+        # 获取请求中的问题、会话ID和API密钥
         data = request.json
         question = data.get('question')
-        session_id = data.get('session_id', 'default')  # 使用会话ID区分不同会话
+        api_key = data.get('api_key')  # 从请求中获取API密钥
+        session_id = session.get('session_id')
+        
+        # 验证必要参数
         if not question:
-            return jsonify({"error": "Question is required"}), 400
-
+            return jsonify({"error": "问题不能为空"}), 400
+        if not api_key:
+            return jsonify({"error": "API密钥不能为空"}), 401
+        if not session_id:
+            return jsonify({"error": "无效的会话，请重新登录"}), 401
+        
         # 初始化会话上下文
         if session_id not in session_context:
             session_context[session_id] = []
@@ -63,18 +103,18 @@ def ask_question():
         if len(session_context[session_id]) > MAX_CONTEXT_LENGTH:
             session_context[session_id] = session_context[session_id][-MAX_CONTEXT_LENGTH:]
 
-        # 准备请求头
+        # 准备请求头 - 使用客户端提供的API密钥
         headers = {
-            "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
         
         # 构建符合DeepSeek API要求的请求体
         payload = {
             "model": "deepseek-chat",
-            "messages": session_context[session_id],  # 包含上下文消息
+            "messages": session_context[session_id],
             "temperature": 0.7,
-            "max_tokens": 4000,  # 降低token限制，避免超过API限制
+            "max_tokens": 4000,
             "stream": False
         }
         
@@ -102,14 +142,11 @@ def ask_question():
 
         # 添加AI回复到上下文
         session_context[session_id].append({"role": "assistant", "content": answer})
-        # print(f"answer: {answer}")
-
-
         
         # 返回答案给前端
         return jsonify({
             "answer": answer,
-            "raw_response": response_data  # 添加原始响应数据
+            "raw_response": response_data
         })
 
     except RetryError as e:
@@ -117,7 +154,6 @@ def ask_question():
         app.logger.error(f"Request payload: {payload}")
         app.logger.error(f"Request headers: {headers}")
         
-        # 检查是否是HTTP错误并提供更详细的错误信息
         inner_exception = getattr(e, "last_attempt", None)
         if inner_exception and hasattr(inner_exception, "exception"):
             inner_exc = inner_exception.exception()
@@ -148,6 +184,15 @@ def ask_question():
             "error": "An unexpected error occurred",
             "details": str(e)
         }), 500
+
+# 登出路由 - 清除会话
+@app.route('/logout')
+def logout():
+    session_id = session.get('session_id')
+    if session_id and session_id in session_context:
+        del session_context[session_id]
+    session.clear()
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(debug=True)

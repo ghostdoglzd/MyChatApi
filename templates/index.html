@@ -39,6 +39,7 @@
             color: white;
             padding: 15px;
             text-align: center;
+            position: relative;
         }
         .chat-messages {
             flex-grow: 1;
@@ -231,12 +232,30 @@
             text-align: right;
             margin-top: 5px;
         }
+        /* 添加退出按钮样式 */
+        .logout-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: transparent;
+            color: white;
+            border: 1px solid white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .logout-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
     </style>
 </head>
 <body>
     <div class="chat-container">
         <div class="chat-header">
             <h1>AI聊天助手</h1>
+            <a href="/logout" class="logout-btn">退出登录</a>
         </div>
         <div class="chat-messages" id="chat-messages">
             <div class="message-container ai-container">
@@ -276,8 +295,43 @@
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
 
-        // 定义会话ID
-        const sessionId = 'default';  // 可以根据需求动态生成或管理会话ID
+        // 检查并获取API密钥
+        function getApiKey() {
+            let apiKey = localStorage.getItem('deepseek_api_key');
+            if (!apiKey) {
+                apiKey = sessionStorage.getItem('deepseek_api_key');
+            }
+            return apiKey;
+        }
+
+        // 检查API密钥是否存在
+        function checkApiKey() {
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                // 如果密钥不存在，重定向到登录页面
+                window.location.href = '/';
+                return false;
+            }
+            return true;
+        }
+
+        // 检查是否已接受隐私政策
+        function checkPrivacyPolicy() {
+            if (localStorage.getItem('privacy_policy_accepted') !== 'true') {
+                // 如果未接受隐私政策，重定向到登录页面
+                window.location.href = '/';
+                return false;
+            }
+            return true;
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查API密钥是否存在和隐私政策是否接受
+            if (!checkApiKey() || !checkPrivacyPolicy()) {
+                return;
+            }
+        });
 
         // 发送按钮点击事件
         sendBtn.addEventListener('click', sendMessage);
@@ -306,6 +360,12 @@
 
         // 发送消息函数
         async function sendMessage() {
+            // 检查API密钥是否存在
+            if (!checkApiKey()) {
+                return;
+            }
+
+            const apiKey = getApiKey();
             const message = userInput.value.trim();
             if (!message) return;
 
@@ -324,13 +384,16 @@
             const loadingId = addLoadingMessage();
             
             try {
-                // 调用API
+                // 调用API - 现在包含API密钥
                 const response = await fetch('/ask', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ question: message, session_id: sessionId }),  // 添加会话ID
+                    body: JSON.stringify({ 
+                        question: message,
+                        api_key: apiKey  // 从本地存储中获取API密钥
+                    }),
                 });
                 
                 // 移除加载提示
@@ -338,7 +401,20 @@
                 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    addAIMessage(`请求出错：${errorData.error || '服务器错误'}\n详细信息：${errorData.details || '未知错误'}`);
+                    // 如果是未授权错误，可能是API密钥无效或已过期
+                    if (response.status === 401) {
+                        // 清除存储的密钥
+                        localStorage.removeItem('deepseek_api_key');
+                        sessionStorage.removeItem('deepseek_api_key');
+                        // 显示错误消息
+                        addAIMessage(`认证失败：您的API密钥可能无效或已过期。系统将在3秒后返回登录页面...`);
+                        // 3秒后重定向到登录页面
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 3000);
+                    } else {
+                        addAIMessage(`请求出错：${errorData.error || '服务器错误'}\n详细信息：${errorData.details || '未知错误'}`);
+                    }
                 } else {
                     const responseData = await response.json();
                     addAIMessage(responseData.answer);
