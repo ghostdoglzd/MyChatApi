@@ -276,12 +276,382 @@
             height: 20px;
             margin-right: 8px;
         }
+
+        /* 设置弹窗样式 */
+        .settings-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .settings-modal {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .settings-header h2 {
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .settings-form-group {
+            margin-bottom: 15px;
+        }
+        
+        .settings-form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .settings-form-group input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .settings-form-group input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        .settings-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .settings-save-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        /* 添加设置按钮 */
+        .settings-btn {
+            position: absolute;
+            top: 15px;
+            right: 90px;
+            background-color: transparent;
+            color: white;
+            border: 1px solid white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .settings-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        /* 暗色模式样式 */
+        body.dark-mode {
+            background-color: #222;
+            color: #eee;
+        }
+        
+        body.dark-mode .chat-container {
+            background-color: #333;
+            border-color: #555;
+        }
+        
+        body.dark-mode .chat-messages {
+            background-color: #333;
+        }
+        
+        body.dark-mode .ai-message {
+            background-color: #444;
+            color: #eee;
+            border-color: #555;
+        }
+        
+        body.dark-mode .user-message {
+            background-color: #2a5885;
+        }
+        
+        body.dark-mode .input-area {
+            background-color: #444;
+            border-color: #555;
+        }
+        
+        body.dark-mode #user-input {
+            background-color: #555;
+            color: #eee;
+            border-color: #666;
+        }
+        
+        body.dark-mode .ai-message-content code {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        body.dark-mode .ai-message-content pre {
+            background-color: #222;
+            border-color: #555;
+        }
+        
+        body.dark-mode .github-feedback {
+            background-color: #444;
+            color: #eee;
+        }
+        
+        body.dark-mode .settings-modal {
+            background-color: #333;
+            color: #eee;
+        }
+        
+        body.dark-mode .settings-form-group input[type="text"] {
+            background-color: #444;
+            color: #eee;
+            border-color: #555;
+        }
+        
+        body.dark-mode .close-btn {
+            color: #eee;
+        }
+        
+        body.dark-mode .settings-header {
+            border-color: #555;
+        }
+        
+        /* 字体大小设置 */
+        body.font-small {
+            font-size: 14px;
+        }
+        
+        body.font-medium {
+            font-size: 16px;
+        }
+        
+        body.font-large {
+            font-size: 18px;
+        }
+        
+        body.font-xlarge {
+            font-size: 20px;
+        }
+        
+        /* 设置选项卡样式 */
+        .settings-tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        
+        .settings-tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            margin-right: 5px;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .settings-tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .settings-tab:hover:not(.active) {
+            background-color: #f0f0f0;
+        }
+        
+        body.dark-mode .settings-tabs {
+            border-color: #555;
+        }
+        
+        body.dark-mode .settings-tab:hover:not(.active) {
+            background-color: #444;
+        }
+        
+        .settings-panel {
+            display: none;
+        }
+        
+        .settings-panel.active {
+            display: block;
+        }
+        
+        /* 布局设置样式 */
+        .layout-option {
+            display: inline-block;
+            width: calc(33.33% - 10px);
+            margin: 5px;
+            text-align: center;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .layout-option:hover {
+            border-color: #aaa;
+        }
+        
+        .layout-option.selected {
+            border-color: #007bff;
+        }
+        
+        body.dark-mode .layout-option {
+            border-color: #555;
+        }
+        
+        body.dark-mode .layout-option:hover {
+            border-color: #777;
+        }
+        
+        body.dark-mode .layout-option.selected {
+            border-color: #007bff;
+        }
+        
+        /* 主题颜色选择器 */
+        .theme-colors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .color-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .color-option:hover, .color-option.selected {
+            transform: scale(1.1);
+            border-color: white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        
+        /* 滑块样式 */
+        .settings-form-group input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .font-size-label {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+        
+        .font-size-label span {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        body.dark-mode .font-size-label span {
+            color: #aaa;
+        }
+        
+        .font-preview {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        body.dark-mode .font-preview {
+            border-color: #555;
+        }
+        
+        /* 开关样式 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+        
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+        }
+        
+        .toggle-container label {
+            margin-bottom: 0;
+        }
     </style>
 </head>
-<body>
+<body class="font-medium">
     <div class="chat-container">
         <div class="chat-header">
             <h1>AI聊天助手</h1>
+            <button class="settings-btn" id="settings-btn">设置</button>
             <a href="/logout" class="logout-btn">退出登录</a>
         </div>
         <div class="chat-messages" id="chat-messages">
@@ -301,6 +671,99 @@
         <div class="input-area">
             <textarea id="user-input" placeholder="输入你的问题..." rows="1"></textarea>
             <button id="send-btn">发送</button>
+        </div>
+    </div>
+
+    <!-- 修改设置弹窗 -->
+    <div class="settings-modal-overlay" id="settings-modal">
+        <div class="settings-modal">
+            <div class="settings-header">
+                <h2>设置</h2>
+                <button class="close-btn" id="close-settings-btn">&times;</button>
+            </div>
+            
+            <div class="settings-tabs">
+                <div class="settings-tab active" data-tab="appearance">外观</div>
+                <div class="settings-tab" data-tab="connection">连接</div>
+                <div class="settings-tab" data-tab="about">关于</div>
+            </div>
+            
+            <div class="settings-panel active" id="appearance-panel">
+                <!-- 显示设置 -->
+                <div class="toggle-container">
+                    <label for="dark-mode-toggle">暗色模式</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="dark-mode-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <!-- 字体大小设置 -->
+                <div class="settings-form-group">
+                    <label for="font-size-slider">字体大小</label>
+                    <input type="range" min="1" max="4" value="2" id="font-size-slider">
+                    <div class="font-size-label">
+                        <span>小</span>
+                        <span>中</span>
+                        <span>大</span>
+                        <span>特大</span>
+                    </div>
+                    <div class="font-preview" id="font-preview">
+                        预览文本大小
+                    </div>
+                </div>
+                
+                <!-- 主题色设置 -->
+                <div class="settings-form-group">
+                    <label>主题颜色</label>
+                    <div class="theme-colors">
+                        <div class="color-option selected" style="background-color: #007bff;" data-color="#007bff"></div>
+                        <div class="color-option" style="background-color: #28a745;" data-color="#28a745"></div>
+                        <div class="color-option" style="background-color: #dc3545;" data-color="#dc3545"></div>
+                        <div class="color-option" style="background-color: #fd7e14;" data-color="#fd7e14"></div>
+                        <div class="color-option" style="background-color: #6f42c1;" data-color="#6f42c1"></div>
+                        <div class="color-option" style="background-color: #20c997;" data-color="#20c997"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-panel" id="connection-panel">
+                <!-- 连接设置 -->
+                <div class="settings-form-group">
+                    <div class="toggle-container">
+                        <label for="use-proxy">使用代理</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="use-proxy">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p style="color: #666; font-size: 14px;">如果您在连接DeepSeek API时遇到网络问题，可以尝试配置代理。</p>
+                </div>
+                <div class="settings-form-group">
+                    <label for="http-proxy">HTTP 代理</label>
+                    <input type="text" id="http-proxy" name="http-proxy" placeholder="例如: http://127.0.0.1:7890">
+                </div>
+                <div class="settings-form-group">
+                    <label for="https-proxy">HTTPS 代理</label>
+                    <input type="text" id="https-proxy" name="https-proxy" placeholder="例如: http://127.0.0.1:7890">
+                </div>
+            </div>
+            
+            <div class="settings-panel" id="about-panel">
+                <!-- 关于信息 -->
+                <div style="text-align: center; padding: 20px 0;">
+                    <h3>DeepSeek AI 聊天应用</h3>
+                    <p style="margin-top: 10px;">版本: 1.0.0</p>
+                    <p>基于Flask和DeepSeek API构建的聊天应用</p>
+                    <p style="margin-top: 15px;">
+                        <a href="https://github.com/ghostdoglzd/MyChatApi" target="_blank" style="color: #007bff; text-decoration: none;">GitHub项目地址</a>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="settings-actions">
+                <button class="settings-save-btn" id="save-settings-btn">保存设置</button>
+            </div>
         </div>
     </div>
 
@@ -610,6 +1073,199 @@
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
         }
+
+        // 设置相关脚本
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+        const saveSettingsBtn = document.getElementById('save-settings-btn');
+        const useProxyCheckbox = document.getElementById('use-proxy');
+        const httpProxyInput = document.getElementById('http-proxy');
+        const httpsProxyInput = document.getElementById('https-proxy');
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const fontSizeSlider = document.getElementById('font-size-slider');
+        const fontPreview = document.getElementById('font-preview');
+        const colorOptions = document.querySelectorAll('.color-option');
+        
+        // 选项卡切换
+        const tabs = document.querySelectorAll('.settings-tab');
+        const panels = document.querySelectorAll('.settings-panel');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // 移除所有选项卡和面板的活动状态
+                tabs.forEach(t => t.classList.remove('active'));
+                panels.forEach(p => p.classList.remove('active'));
+                
+                // 激活点击的选项卡
+                this.classList.add('active');
+                
+                // 激活对应的面板
+                const tabId = this.getAttribute('data-tab');
+                document.getElementById(`${tabId}-panel`).classList.add('active');
+            });
+        });
+        
+        // 字体大小预览
+        fontSizeSlider.addEventListener('input', function() {
+            updateFontSize(this.value);
+        });
+        
+        function updateFontSize(size) {
+            const sizes = ['font-small', 'font-medium', 'font-large', 'font-xlarge'];
+            document.body.classList.remove(...sizes);
+            document.body.classList.add(sizes[size - 1]);
+            
+            // 更新预览
+            if (size == 1) fontPreview.style.fontSize = '14px';
+            if (size == 2) fontPreview.style.fontSize = '16px';
+            if (size == 3) fontPreview.style.fontSize = '18px';
+            if (size == 4) fontPreview.style.fontSize = '20px';
+        }
+        
+        // 颜色选择
+        colorOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                colorOptions.forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                const color = this.getAttribute('data-color');
+                updateThemeColor(color);
+            });
+        });
+        
+        function updateThemeColor(color) {
+            document.documentElement.style.setProperty('--theme-color', color);
+            document.querySelector('.chat-header').style.backgroundColor = color;
+            document.querySelectorAll('.user-message').forEach(el => {
+                el.style.backgroundColor = color;
+            });
+            document.querySelectorAll('.settings-tab.active').forEach(el => {
+                el.style.backgroundColor = color;
+            });
+            document.querySelectorAll('.settings-save-btn, #send-btn').forEach(el => {
+                el.style.backgroundColor = color;
+            });
+        }
+        
+        // 暗色模式切换
+        darkModeToggle.addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        });
+        
+        // 从本地存储加载设置
+        function loadSettings() {
+            // 加载代理设置
+            const proxySettings = JSON.parse(localStorage.getItem('proxy_settings') || '{}');
+            useProxyCheckbox.checked = proxySettings.use_proxy || false;
+            httpProxyInput.value = proxySettings.http_proxy || '';
+            httpsProxyInput.value = proxySettings.https_proxy || '';
+            
+            // 加载外观设置
+            const appearanceSettings = JSON.parse(localStorage.getItem('appearance_settings') || '{}');
+            
+            // 暗色模式
+            if (appearanceSettings.darkMode) {
+                darkModeToggle.checked = true;
+                document.body.classList.add('dark-mode');
+            }
+            
+            // 字体大小
+            if (appearanceSettings.fontSize) {
+                fontSizeSlider.value = appearanceSettings.fontSize;
+                updateFontSize(appearanceSettings.fontSize);
+            }
+            
+            // 主题颜色
+            if (appearanceSettings.themeColor) {
+                colorOptions.forEach(option => {
+                    if (option.getAttribute('data-color') === appearanceSettings.themeColor) {
+                        colorOptions.forEach(opt => opt.classList.remove('selected'));
+                        option.classList.add('selected');
+                        updateThemeColor(appearanceSettings.themeColor);
+                    }
+                });
+            }
+        }
+        
+        // 打开设置弹窗
+        settingsBtn.addEventListener('click', function() {
+            loadSettings();
+            settingsModal.style.display = 'flex';
+        });
+        
+        // 关闭设置弹窗
+        closeSettingsBtn.addEventListener('click', function() {
+            settingsModal.style.display = 'none';
+        });
+        
+        // 保存设置
+        saveSettingsBtn.addEventListener('click', async function() {
+            // 保存代理设置
+            const proxySettings = {
+                use_proxy: useProxyCheckbox.checked,
+                http_proxy: httpProxyInput.value.trim(),
+                https_proxy: httpsProxyInput.value.trim()
+            };
+            
+            // 保存外观设置
+            const appearanceSettings = {
+                darkMode: darkModeToggle.checked,
+                fontSize: parseInt(fontSizeSlider.value),
+                themeColor: document.querySelector('.color-option.selected').getAttribute('data-color')
+            };
+            
+            try {
+                // 保存代理设置到服务器
+                const response = await fetch('/set_proxy', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(proxySettings)
+                });
+                
+                if (response.ok) {
+                    // 保存设置到本地存储
+                    localStorage.setItem('proxy_settings', JSON.stringify(proxySettings));
+                    localStorage.setItem('appearance_settings', JSON.stringify(appearanceSettings));
+                    
+                    // 显示保存成功
+                    alert('设置已保存');
+                    settingsModal.style.display = 'none';
+                } else {
+                    alert('保存设置失败');
+                }
+            } catch (error) {
+                console.error('保存设置出错:', error);
+                alert('保存设置时发生错误');
+            }
+        });
+        
+        // 页面加载时应用保存的设置
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载外观设置
+            const appearanceSettings = JSON.parse(localStorage.getItem('appearance_settings') || '{}');
+            
+            // 应用暗色模式
+            if (appearanceSettings.darkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            // 应用字体大小
+            if (appearanceSettings.fontSize) {
+                updateFontSize(appearanceSettings.fontSize);
+            }
+            
+            // 应用主题颜色
+            if (appearanceSettings.themeColor) {
+                updateThemeColor(appearanceSettings.themeColor);
+            }
+        });
     </script>
 </body>
 </html>

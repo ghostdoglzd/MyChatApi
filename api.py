@@ -19,6 +19,13 @@ MAX_CONTEXT_LENGTH = 10
 # 存储会话上下文
 session_context = {}
 
+# 代理设置 - 默认不使用代理
+proxy_settings = {
+    'use_proxy': False,
+    'http_proxy': None,
+    'https_proxy': None
+}
+
 # 登录页面路由 - 作为网站入口点
 @app.route('/')
 def login():
@@ -60,10 +67,37 @@ def index():
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def call_deepseek_api(payload, headers):
     try:
+        # 根据代理设置决定是否使用代理
+        proxies = None
+        if proxy_settings['use_proxy'] and (proxy_settings['http_proxy'] or proxy_settings['https_proxy']):
+            proxies = {
+                'http': proxy_settings['http_proxy'],
+                'https': proxy_settings['https_proxy']
+            }
+            app.logger.info(f"使用代理: {proxies}")
+        else:
+            # 明确指定不使用代理
+            proxies = {'http': None, 'https': None}
+            app.logger.info("不使用代理连接")
+            
         response = requests.post(
             DEEPSEEK_API_URL,
             json=payload,
             headers=headers,
+            proxies=proxies,  # 添加代理配置
+            timeout=120
+        )
+        response.raise_for_status()
+        return response
+    except requests.exceptions.ProxyError as e:
+        app.logger.error(f"代理错误: {e}")
+        # 尝试不使用代理再次连接
+        app.logger.info("尝试不使用代理直接连接...")
+        response = requests.post(
+            DEEPSEEK_API_URL,
+            json=payload,
+            headers=headers,
+            proxies={'http': None, 'https': None},
             timeout=120
         )
         response.raise_for_status()
@@ -73,6 +107,18 @@ def call_deepseek_api(payload, headers):
         app.logger.error(f"Response status code: {e.response.status_code}")
         app.logger.error(f"Response content: {e.response.text}")
         raise
+
+# 设置代理路由
+@app.route('/set_proxy', methods=['POST'])
+def set_proxy():
+    data = request.json
+    proxy_settings['use_proxy'] = data.get('use_proxy', False)
+    proxy_settings['http_proxy'] = data.get('http_proxy')
+    proxy_settings['https_proxy'] = data.get('https_proxy')
+    
+    app.logger.info(f"代理设置已更新: 使用代理: {proxy_settings['use_proxy']}, HTTP代理: {proxy_settings['http_proxy']}, HTTPS代理: {proxy_settings['https_proxy']}")
+    
+    return jsonify({"success": True})
 
 # 问答API路由
 @app.route('/ask', methods=['POST'])
@@ -151,37 +197,46 @@ def ask_question():
 
     except RetryError as e:
         app.logger.error(f"RetryError: Failed to connect to DeepSeek API after retries. Details: {str(e)}")
-        app.logger.error(f"Request payload: {payload}")
-        app.logger.error(f"Request headers: {headers}")
         
+        # 打印更多异常信息以帮助调试
         inner_exception = getattr(e, "last_attempt", None)
         if inner_exception and hasattr(inner_exception, "exception"):
             inner_exc = inner_exception.exception()
+            app.logger.error(f"底层异常类型: {type(inner_exc).__name__}")
+            app.logger.error(f"底层异常内容: {str(inner_exc)}")
+            
+            if isinstance(inner_exc, requests.exceptions.ProxyError):
+                return jsonify({
+                    "error": "代理连接失败",
+                    "details": "连接DeepSeek API时发生代理错误，请检查代理设置或尝试直接连接。"
+                }), 503
             if isinstance(inner_exc, requests.exceptions.HTTPError):
                 return jsonify({
-                    "error": "DeepSeek API returned an error",
-                    "details": f"HTTP Status: {inner_exc.response.status_code}, Response: {inner_exc.response.text}"
+                    "error": "DeepSeek API返回错误",
+                    "details": f"HTTP状态: {inner_exc.response.status_code}, 响应: {inner_exc.response.text}"
                 }), 503
                 
         return jsonify({
-            "error": "Failed to connect to DeepSeek API after retries",
-            "details": str(e)
+            "error": "多次尝试连接DeepSeek API失败",
+            "details": "请检查网络连接、代理设置或API状态。"
         }), 503
     except requests.exceptions.ConnectionError as e:
         app.logger.error(f"ConnectionError: Unable to establish connection to DeepSeek API. Details: {str(e)}")
-        app.logger.error(f"Request payload: {payload}")
-        app.logger.error(f"Request headers: {headers}")
         return jsonify({
-            "error": "Connection error occurred",
-            "details": str(e)
+            "error": "连接错误",
+            "details": "无法建立与DeepSeek API的连接，请检查网络或代理设置。"
         }), 503
     except requests.exceptions.Timeout:
         app.logger.error("TimeoutError: Request to DeepSeek API timed out.")
-        return jsonify({"error": "Request timed out"}), 504
+        return jsonify({"error": "请求超时", "details": "连接DeepSeek API超时，请稍后再试。"}), 504
     except Exception as e:
         app.logger.error(f"Unexpected error: {str(e)}")
+        app.logger.error(f"Error type: {type(e).__name__}")
+        # 记录详细的调用堆栈
+        import traceback
+        app.logger.error(f"堆栈跟踪: {traceback.format_exc()}")
         return jsonify({
-            "error": "An unexpected error occurred",
+            "error": "发生未预期的错误",
             "details": str(e)
         }), 500
 
