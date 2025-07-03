@@ -13,8 +13,8 @@
 
 1. 克隆仓库
    ```
-   git clone https://github.com/YOUR_GITHUB_USERNAME/ChatApi.git
-   cd ChatApi
+   git clone https://github.com/ghostdoglzd/MyChatApi.git
+   cd MyChatApi
    ```
 
 2. 安装依赖
