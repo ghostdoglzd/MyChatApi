@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI聊天助手</title>
+    <!-- 引入Markdown解析库 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 引入代码高亮库 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/highlight.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-height: calc(100vh - 40px);
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: white;
+        }
+        .chat-header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: white;
+        }
+        .message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            max-width: 85%;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-message {
+            background-color: #f8f9fa;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #eee;
+        }
+        .ai-message-content {
+            margin-top: 5px;
+        }
+        .message-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .user-container {
+            justify-content: flex-end;
+        }
+        .ai-container {
+            justify-content: flex-start;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        .user-avatar {
+            background-color: #007bff;
+            color: white;
+        }
+        .ai-avatar {
+            background-color: #28a745;
+            color: white;
+        }
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+            outline: none;
+            font-size: 16px;
+        }
+        #send-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 0 24px;
+            margin-left: 10px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+            flex-shrink: 0;
+        }
+        #send-btn:hover {
+            background-color: #0069d9;
+        }
+        #send-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: inline-block;
+            width: 50px;
+            text-align: left;
+        }
+        .loading:after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+        .message-actions {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        .ai-message:hover .message-actions, .user-message:hover .message-actions {
+            opacity: 1;
+        }
+        .copy-btn {
+            background-color: rgba(255,255,255,0.3);
+            border: none;
+            cursor: pointer;
+            color: #555;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .copy-btn:hover {
+            background-color: rgba(255,255,255,0.5);
+        }
+        /* Markdown样式 */
+        .ai-message-content pre {
+            background-color: #f8f8f8;
+            border-radius: 5px;
+            padding: 12px;
+            overflow-x: auto;
+            margin: 12px 0;
+            border: 1px solid #eee;
+        }
+        .ai-message-content code {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            background-color: rgba(0,0,0,0.05);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        .ai-message-content pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        .ai-message-content blockquote {
+            border-left: 4px solid #ddd;
+            padding-left: 12px;
+            color: #666;
+            margin: 12px 0;
+            font-style: italic;
+        }
+        .ai-message-content table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+        .ai-message-content th, .ai-message-content td {
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .ai-message-content th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .ai-message-content p {
+            margin: 12px 0;
+            line-height: 1.7;
+        }
+        .ai-message-content ul, .ai-message-content ol {
+            margin: 12px 0;
+            padding-left: 24px;
+        }
+        .ai-message-content li {
+            margin: 6px 0;
+        }
+        .timestamp {
+            font-size: 12px;
+            color: #888;
+            text-align: right;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>AI聊天助手</h1>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message-container ai-container">
+                <div class="avatar ai-avatar">AI</div>
+                <div class="message ai-message">
+                    <div class="message-actions">
+                        <button class="copy-btn" onclick="copyToClipboard(this)">复制</button>
+                    </div>
+                    <div class="ai-message-content">
+                        👋 你好！我是AI助手，基于DeepSeek技术构建。有什么我可以帮助你的吗？
+                    </div>
+                    <div class="timestamp" id="timestamp-0">刚刚</div>
+                </div>
+            </div>
+        </div>
+        <div class="input-area">
+            <textarea id="user-input" placeholder="输入你的问题..." rows="1"></textarea>
+            <button id="send-btn">发送</button>
+        </div>
+    </div>
+
+    <script>
+        // 配置marked解析器
+        marked.setOptions({
+            highlight: function(code, language) {
+                if (language && hljs.getLanguage(language)) {
+                    return hljs.highlight(code, {language: language}).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true
+        });
+
+        // 获取DOM元素
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+
+        // 定义会话ID
+        const sessionId = 'default';  // 可以根据需求动态生成或管理会话ID
+
+        // 发送按钮点击事件
+        sendBtn.addEventListener('click', sendMessage);
+
+        // 回车键发送消息（Shift+Enter换行）
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (!sendBtn.disabled) {
+                    sendMessage();
+                }
+            }
+        });
+
+        // 自动调整文本框高度
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (this.scrollHeight > 150) {
+                this.style.height = '150px';
+                this.style.overflowY = 'auto';
+            } else {
+                this.style.overflowY = 'hidden';
+            }
+        });
+
+        // 发送消息函数
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // 禁用发送按钮防止重复提交
+            sendBtn.disabled = true;
+            sendBtn.textContent = '发送中...';
+            
+            // 添加用户消息到聊天界面
+            addUserMessage(message);
+            
+            // 清空输入框
+            userInput.value = '';
+            userInput.style.height = '50px';
+            
+            // 显示AI正在输入
+            const loadingId = addLoadingMessage();
+            
+            try {
+                // 调用API
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: message, session_id: sessionId }),  // 添加会话ID
+                });
+                
+                // 移除加载提示
+                removeLoadingMessage(loadingId);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    addAIMessage(`请求出错：${errorData.error || '服务器错误'}\n详细信息：${errorData.details || '未知错误'}`);
+                } else {
+                    const responseData = await response.json();
+                    addAIMessage(responseData.answer);
+                    
+                    // 显示原始响应数据（调试用）
+                    console.log("原始响应数据:", responseData.raw_response);
+                }
+                
+            } catch (error) {
+                // 移除加载提示
+                removeLoadingMessage(loadingId);
+                addAIMessage(`网络错误：${error.message || '请检查网络连接'}`);
+            } finally {
+                // 重新启用发送按钮
+                sendBtn.disabled = false;
+                sendBtn.textContent = '发送';
+            }
+        }
+
+        // 添加流式消息更新函数
+        function updateAIMessage(messageId, content) {
+            const messageDiv = document.getElementById(messageId);
+            if (messageDiv) {
+                const contentDiv = messageDiv.querySelector('.ai-message-content');
+                if (contentDiv) {
+                    // 使用marked解析markdown
+                    contentDiv.innerHTML = marked.parse(content);
+            
+                    // 实时高亮代码
+                    setTimeout(() => {
+                        contentDiv.querySelectorAll('pre code').forEach(block => {
+                            hljs.highlightElement(block);
+                        });
+                    }, 0);
+                }
+            }
+            scrollToBottom();
+        }
+
+        // 添加用户消息
+        function addUserMessage(message) {
+            const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-container user-container';
+            messageDiv.innerHTML = `
+                <div class="message user-message">
+                    <div class="message-actions">
+                        <button class="copy-btn" onclick="copyToClipboard(this)">复制</button>
+                    </div>
+                    <div>${escapeHtml(message)}</div>
+                    <div class="timestamp">${timestamp}</div>
+                </div>
+                <div class="avatar user-avatar">你</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        // 添加AI消息
+        function addAIMessage(message) {
+            const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-container ai-container';
+            
+            // 使用marked解析markdown
+            const parsedContent = marked.parse(message);
+            
+            messageDiv.innerHTML = `
+                <div class="avatar ai-avatar">AI</div>
+                <div class="message ai-message">
+                    <div class="message-actions">
+                        <button class="copy-btn" onclick="copyToClipboard(this)">复制</button>
+                    </div>
+                    <div class="ai-message-content">${parsedContent}</div>
+                    <div class="timestamp">${timestamp}</div>
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            
+            // 代码高亮
+            setTimeout(() => {
+                messageDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }, 0);
+            
+            scrollToBottom();
+        }
+
+        // 添加加载消息
+        function addLoadingMessage() {
+            const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const id = 'loading-' + Date.now();
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message-container ai-container';
+            messageDiv.id = id;
+            messageDiv.innerHTML = `
+                <div class="avatar ai-avatar">AI</div>
+                <div class="message ai-message">
+                    <div class="ai-message-content">
+                        <span class="loading">思考中</span>
+                    </div>
+                    <div class="timestamp">${timestamp}</div>
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+            return id;
+        }
+
+        // 移除加载消息
+        function removeLoadingMessage(id) {
+            const loadingMessage = document.getElementById(id);
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(button) {
+            const messageElement = button.closest('.message');
+            const contentElement = messageElement.querySelector('.ai-message-content, .user-message > div:not(.message-actions):not(.timestamp)');
+            const textToCopy = contentElement.innerText;
+            
+            navigator.clipboard.writeText(textToCopy).then(
+                function() {
+                    // 临时显示复制成功
+                    const originalText = button.textContent;
+                    button.textContent = '✓ 已复制';
+                    button.style.color = '#28a745';
+                    setTimeout(() => {
+                        button.textContent = originalText;
+                        button.style.color = '';
+                    }, 2000);
+                },
+                function() {
+                    button.textContent = '复制失败!';
+                    button.style.color = '#dc3545';
+                    setTimeout(() => {
+                        button.textContent = '复制';
+                        button.style.color = '';
+                    }, 2000);
+                }
+            );
+        }
+
+        // 滚动到底部
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // HTML转义函数
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
